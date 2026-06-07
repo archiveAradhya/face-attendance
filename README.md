@@ -46,26 +46,34 @@ python app.py
 
 ## Project Structure
 
-```
-face-attendance-glass/
+```text
+face-attendance/
 ├── app.py                  # Main application entry point
 ├── database.py             # SQLite database manager
-├── face_manager.py         # Face recognition logic
-├── attendance_manager.py   # Attendance tracking
+├── face_manager.py         # Face detection and recognition logic
+├── attendance_manager.py   # Attendance tracking and data handling
 ├── requirements.txt        # Python dependencies
-├── README.md               # This file
-├── known_faces/            # Stored face images
-├── attendance_data/        # CSV attendance files
+├── README.md               # Project documentation
+├── PROJECT_OVERVIEW.md     # Project overview and feature summary
+├── test_app.py             # Basic app tests/checks
+│
 ├── ui_components/          # UI component modules
 │   ├── __init__.py
-│   ├── theme.py            # Theme manager (dark/light)
+│   ├── theme.py            # Dark/light theme manager
 │   ├── sidebar.py          # Left navigation sidebar
-│   ├── pages.py            # All application pages
-│   └── widgets.py          # Reusable glass widgets
-└── assets/                 # Icons and images
-    ├── ui/
-    └── icons/
-```
+│   ├── pages.py            # Application pages
+│   └── widgets.py          # Reusable UI widgets
+│
+├── assets/                 # Icons, images, and UI assets
+│
+├── known_faces/            # Local registered face images
+│                           # Ignored from GitHub for privacy
+│
+├── attendance_data/        # Local attendance CSV files
+│                           # Ignored from GitHub
+│
+└── attendance_system.db    # Local SQLite database
+                            # Ignored from GitHub
 
 ## Tech Stack
 
