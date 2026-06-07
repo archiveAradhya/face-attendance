@@ -6,3 +6,8 @@ __pycache__/
 .vscode/
 .qwen/
 .deepface_cache/
+
+# Local runtime data
+attendance_system.db
+attendance_data/
+known_faces/
