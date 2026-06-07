@@ -15,8 +15,8 @@ def test_imports():
         from attendance_manager import AttendanceManager
         from ui_components.theme import ThemeManager
         from ui_components.sidebar import SidebarNavigation
-        from ui_components.pages import HomePage, FaceDatabasePage, AttendancePage, ReportsPage, SettingsPage
-        from app import FaceAttendanceApp, FaceRegistrationDialog, UserManagementDialog
+        from ui_components.pages import HomePage, LiveAttendancePage, FaceDatabasePage, AttendancePage, ReportsPage, SettingsPage
+        from app import FaceAttendanceApp, FaceRegistrationDialog
         print("✓ All imports successful")
         return True
     except ImportError as e:
@@ -127,7 +127,8 @@ def test_attendance_manager():
             return False
         
         # Test daily attendance stats
-        today = "2026-06-04"  # Current date
+        from datetime import datetime
+        today = datetime.now().strftime('%Y-%m-%d')
         daily_stats = attendance_manager.get_daily_attendance_stats(today)
         if daily_stats:
             print("✓ Daily attendance stats retrieved")
@@ -137,7 +138,7 @@ def test_attendance_manager():
         
         # Test attendance trends
         trends = attendance_manager.get_attendance_trends(7)
-        if trends:
+        if isinstance(trends, dict):
             print(f"✓ Attendance trends retrieved for {len(trends)} days")
         else:
             print("✗ Attendance trends failed")

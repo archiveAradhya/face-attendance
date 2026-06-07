@@ -129,6 +129,13 @@ class DatabaseManager:
             cursor.execute('DELETE FROM users WHERE id = ?', (user_id,))
             conn.commit()
             return cursor.rowcount > 0
+
+    def get_user_count(self):
+        """Get total registered users"""
+        with sqlite3.connect(self.db_name) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT COUNT(*) FROM users')
+            return cursor.fetchone()[0]
     
     def mark_attendance(self, user_id, name, date=None, time=None, status='Present'):
         """Mark attendance for a user"""
@@ -284,6 +291,14 @@ class DatabaseManager:
         except Exception as e:
             print(f"Error exporting CSV: {e}")
             return False
+
+    def clear_attendance(self):
+        """Delete all attendance records"""
+        with sqlite3.connect(self.db_name) as conn:
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM attendance')
+            conn.commit()
+            return cursor.rowcount
     
     def get_user_attendance_history(self, user_id, limit=30):
         """Get recent attendance history for a user"""

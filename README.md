@@ -1,6 +1,6 @@
 # Face Recognition Attendance System
 
-A premium Apple-inspired desktop application for face recognition based attendance tracking, built with Python, OpenCV, and CustomTkinter.
+A premium Apple-inspired desktop application for face recognition based attendance tracking, built with Python, OpenCV, DeepFace, and CustomTkinter.
 
 ## Features
 
@@ -73,7 +73,7 @@ face-attendance-glass/
 |---|---|
 | Python 3 | Core language |
 | OpenCV | Camera capture & image processing |
-| face_recognition | Face detection & encoding |
+| DeepFace | Face matching and verification |
 | CustomTkinter | Modern UI framework |
 | Pillow | Image handling |
 | NumPy | Array operations |
@@ -83,13 +83,12 @@ face-attendance-glass/
 
 ## Usage
 
-1. Add face images to `known_faces/` folder (filename = person name, e.g. `Mishal.jpg`)
-2. Launch the app — faces are loaded automatically
-3. Click **Start Camera** on the Home page
-4. The system detects and recognizes faces in real-time
-5. Attendance is marked automatically when a known face is detected
-6. Use **Register Person** when an unknown face appears
-7. View records, generate reports, and export data from the sidebar pages
+1. Launch the app
+2. Click **Start Camera** on the Home page
+3. The system detects and recognizes faces in real-time
+4. Attendance is marked automatically when a known face is detected
+5. Use **Register Face** near the camera controls to capture and save a new profile
+6. View records, generate reports, and export data from the sidebar pages
 
 ## Face Image Tips
 

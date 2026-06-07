@@ -191,9 +191,8 @@ class AttendanceManager:
     def export_attendance_csv(self, filename, start_date=None, end_date=None, department=None):
         """Export attendance data to CSV"""
         try:
-            attendance_data = self.database_manager.get_attendance_by_date_range(start_date, end_date)
-            
             if department:
+                attendance_data = self.database_manager.get_attendance_by_date_range(start_date, end_date)
                 filtered_data = []
                 for record in attendance_data:
                     user_id = record[1]
@@ -208,6 +207,10 @@ class AttendanceManager:
         except Exception as e:
             print(f"Error exporting attendance CSV: {e}")
             return False
+
+    def clear_attendance(self):
+        """Clear all attendance records."""
+        return self.database_manager.clear_attendance()
     
     def generate_attendance_report(self, start_date, end_date, format='dict'):
         """Generate comprehensive attendance report"""

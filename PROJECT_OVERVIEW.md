@@ -2,7 +2,7 @@
 
 ## 🎯 Project Overview
 
-A premium Apple-inspired desktop application for face recognition based attendance tracking. Built with Python, OpenCV, and CustomTkinter featuring glassmorphism design, real-time face detection, automatic attendance marking, and comprehensive database management.
+A premium Apple-inspired desktop application for face recognition based attendance tracking. Built with Python, OpenCV, DeepFace, and CustomTkinter featuring glassmorphism design, real-time face detection, automatic attendance marking, and comprehensive database management.
 
 ## ✨ Features
 
@@ -46,7 +46,7 @@ A premium Apple-inspired desktop application for face recognition based attendan
 |---|---|
 | **Python 3** | Core application language |
 | **OpenCV** | Camera capture & image processing |
-| **face_recognition** | Face detection & encoding |
+| **DeepFace** | Face matching and verification |
 | **CustomTkinter** | Modern UI framework |
 | **Pillow** | Image handling & manipulation |
 | **NumPy** | Array operations & numerical computing |
@@ -315,7 +315,7 @@ For issues and questions:
 
 ## 🎉 Acknowledgments
 
-- **face_recognition library** for powerful face detection
+- **DeepFace** for face matching and verification
 - **CustomTkinter** for modern UI components
 - **OpenCV** for computer vision capabilities
 - **Apple design principles** for UI inspiration

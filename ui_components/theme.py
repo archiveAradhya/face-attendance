@@ -1,88 +1,125 @@
 import customtkinter as ctk
 
+
 class ThemeManager:
     DARK = "dark"
     LIGHT = "light"
-    
+    SYSTEM = "system"
+
     DARK_COLORS = {
-        "bg_primary": "#000000",
-        "bg_secondary": "#1C1C1E",
-        "bg_card": "rgba(28, 28, 30, 0.8)",
-        "bg_card_hex": "#1C1C1E",
-        "bg_input": "#2C2C2E",
-        "text_primary": "#FFFFFF",
-        "text_secondary": "#8E8E93",
+        "window": "#05070B",
+        "window_alt": "#0A0D14",
+        "sidebar": "#090B10",
+        "sidebar_active": "#112845",
+        "surface": "#10141C",
+        "surface_alt": "#171C26",
+        "surface_hover": "#202938",
+        "glass": "#121722",
+        "glass_light": "#1A2130",
+        "glass_subtle": "#0D111A",
+        "border": "#263142",
+        "border_soft": "#1D2633",
+        "text": "#F5F5F7",
+        "text_muted": "#AAB4C2",
+        "text_dim": "#778294",
         "accent": "#0A84FF",
-        "accent_hover": "#409CFF",
+        "accent_hover": "#4CB3FF",
+        "accent_soft": "#102B49",
         "success": "#30D158",
+        "success_soft": "#102B21",
         "danger": "#FF453A",
-        "warning": "#FF9F0A",
-        "border": "rgba(255, 255, 255, 0.1)",
-        "border_hex": "#38383A",
-        "sidebar_bg": "rgba(20, 20, 22, 0.9)",
-        "sidebar_bg_hex": "#141416",
-        "hover": "rgba(255, 255, 255, 0.05)",
-        "hover_hex": "#1C1C1E",
-        "shadow": "rgba(0, 0, 0, 0.5)"
+        "danger_soft": "#3A1519",
+        "warning": "#FFD60A",
+        "warning_soft": "#3A3213",
+        "input": "#111722",
+        "shadow": "#050506",
+        "glow": "#2F7DCE",
     }
-    
+
     LIGHT_COLORS = {
-        "bg_primary": "#F2F2F7",
-        "bg_secondary": "#FFFFFF",
-        "bg_card": "rgba(255, 255, 255, 0.8)",
-        "bg_card_hex": "#FFFFFF",
-        "bg_input": "#F2F2F7",
-        "text_primary": "#000000",
-        "text_secondary": "#3C3C43",
+        "window": "#F6F8FB",
+        "window_alt": "#EEF3F8",
+        "sidebar": "#EEF3F8",
+        "sidebar_active": "#DCEBFF",
+        "surface": "#FFFFFF",
+        "surface_alt": "#F5F8FC",
+        "surface_hover": "#E7EEF7",
+        "glass": "#FFFFFF",
+        "glass_light": "#FBFCFE",
+        "glass_subtle": "#F1F5FA",
+        "border": "#D8E0EA",
+        "border_soft": "#E5ECF4",
+        "text": "#111827",
+        "text_muted": "#4B5563",
+        "text_dim": "#7A8594",
         "accent": "#007AFF",
-        "accent_hover": "#0051D5",
-        "success": "#34C759",
-        "danger": "#FF3B30",
-        "warning": "#FF9500",
-        "border": "rgba(0, 0, 0, 0.1)",
-        "border_hex": "#D1D1D6",
-        "sidebar_bg": "rgba(242, 242, 247, 0.9)",
-        "sidebar_bg_hex": "#E5E5EA",
-        "hover": "rgba(0, 0, 0, 0.03)",
-        "hover_hex": "#F2F2F7",
-        "shadow": "rgba(0, 0, 0, 0.1)"
+        "accent_hover": "#005FCC",
+        "accent_soft": "#E3F0FF",
+        "success": "#248A3D",
+        "success_soft": "#E4F6EA",
+        "danger": "#D70015",
+        "danger_soft": "#FFE6E8",
+        "warning": "#B78103",
+        "warning_soft": "#FFF4CF",
+        "input": "#FFFFFF",
+        "shadow": "#DDE5EF",
+        "glow": "#B8D8FF",
     }
-    
+
+    _current_theme = DARK
+    _listeners = []
+
     def __init__(self):
-        self.current_theme = self.DARK
-        self.colors = self.DARK_COLORS.copy()
-        self.listeners = []
-        
-        ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
-    
+        self._apply_appearance_mode(self._current_theme)
+
+    @property
+    def current_theme(self):
+        return type(self)._current_theme
+
+    @property
+    def colors(self):
+        return self.get_colors()
+
     def toggle_theme(self):
-        if self.current_theme == self.DARK:
-            self.set_theme(self.LIGHT)
-        else:
-            self.set_theme(self.DARK)
-    
+        self.set_theme(self.LIGHT if self.current_theme == self.DARK else self.DARK)
+
     def set_theme(self, theme):
-        self.current_theme = theme
-        if theme == self.DARK:
-            self.colors = self.DARK_COLORS.copy()
-            ctk.set_appearance_mode("dark")
-        else:
-            self.colors = self.LIGHT_COLORS.copy()
-            ctk.set_appearance_mode("light")
-        
-        for listener in self.listeners:
-            listener(self.current_theme, self.colors)
-    
+        if theme not in (self.DARK, self.LIGHT, self.SYSTEM):
+            theme = self.DARK
+
+        type(self)._current_theme = theme
+        self._apply_appearance_mode(theme)
+
+        colors = self.get_colors()
+        for listener in list(type(self)._listeners):
+            listener(theme, colors)
+
     def add_listener(self, callback):
-        self.listeners.append(callback)
-    
+        if callback not in type(self)._listeners:
+            type(self)._listeners.append(callback)
+
     def remove_listener(self, callback):
-        if callback in self.listeners:
-            self.listeners.remove(callback)
-    
+        if callback in type(self)._listeners:
+            type(self)._listeners.remove(callback)
+
     def get_color(self, key):
-        return self.colors.get(key, "")
-    
+        return self.get_colors().get(key, "")
+
     def get_colors(self):
-        return self.colors.copy()
+        source = self.DARK_COLORS if self._resolved_theme() == self.DARK else self.LIGHT_COLORS
+        return source.copy()
+
+    def _resolved_theme(self):
+        if self.current_theme == self.SYSTEM:
+            return self.DARK if ctk.get_appearance_mode() == "Dark" else self.LIGHT
+        return self.current_theme
+
+    @staticmethod
+    def _apply_appearance_mode(theme):
+        mode = {
+            ThemeManager.DARK: "Dark",
+            ThemeManager.LIGHT: "Light",
+            ThemeManager.SYSTEM: "System",
+        }.get(theme, "Dark")
+        ctk.set_appearance_mode(mode)

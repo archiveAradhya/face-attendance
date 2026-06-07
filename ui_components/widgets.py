@@ -1,308 +1,317 @@
-import customtkinter as ctk
-from PIL import Image, ImageTk
-import cv2
 import os
+import tkinter as tk
+
+import customtkinter as ctk
+import cv2
+from PIL import Image, ImageTk
+
+from .theme import ThemeManager
+
+
+def colors():
+    return ThemeManager().get_colors()
+
+
+SPACING = {
+    "outer": 24,
+    "card": 18,
+    "inner": 18,
+}
+
+
+def _scaled(value, scale):
+    return max(1, int(round(value * scale)))
+
 
 class GlassCard(ctk.CTkFrame):
-    def __init__(self, master, **kwargs):
+    def __init__(self, master, title=None, **kwargs):
+        palette = colors()
+        kwargs.setdefault("fg_color", palette["shadow"])
+        kwargs.setdefault("corner_radius", 20)
+        kwargs.setdefault("border_width", 0)
         super().__init__(master, **kwargs)
-        
-        # Configure glassmorphism effect
-        self.configure(
-            fg_color="transparent",
-            corner_radius=20,
-            border_width=0
-        )
-        
-        # Create glass effect container
-        self.glass_frame = ctk.CTkFrame(
+
+        self.surface = ctk.CTkFrame(
             self,
-            fg_color="rgba(255, 255, 255, 0.1)",
-            corner_radius=15,
+            fg_color=palette["glass"],
+            corner_radius=18,
             border_width=1,
-            border_color="rgba(255, 255, 255, 0.2)"
+            border_color=palette["border"],
         )
-        self.glass_frame.pack(fill="both", expand=True, padx=10, pady=10)
-        
-        # Title label
-        self.title_label = ctk.CTkLabel(
-            self.glass_frame,
-            font=("SF Pro Display", 16, "bold"),
-            text_color=("white", "black")
+        self.surface.pack(fill="both", expand=True, padx=(0, 1), pady=(0, 1))
+
+        self.header = None
+        if title:
+            self.header = ctk.CTkLabel(
+                self.surface,
+                text=title,
+                font=("SF Pro Display", 16, "bold"),
+                text_color=palette["text"],
+                anchor="w",
+            )
+            self.header.pack(fill="x", padx=SPACING["inner"], pady=(SPACING["inner"], 6))
+
+        self.content = ctk.CTkFrame(self.surface, fg_color="transparent", corner_radius=0)
+        self.content.pack(
+            fill="both",
+            expand=True,
+            padx=SPACING["inner"],
+            pady=(8 if title else SPACING["inner"], SPACING["inner"]),
         )
-        self.title_label.pack(pady=(15, 10))
-        
-        # Content frame
-        self.content_frame = ctk.CTkFrame(
-            self.glass_frame,
-            fg_color="transparent",
-            corner_radius=0,
-            border_width=0
-        )
-        self.content_frame.pack(fill="both", expand=True, padx=15, pady=(0, 15))
-    
+        self.after(20, self.animate_in)
+
     def set_title(self, title):
-        self.title_label.configure(text=title)
+        palette = colors()
+        if self.header is None:
+            self.header = ctk.CTkLabel(
+                self.surface,
+                text=title,
+                font=("SF Pro Display", 16, "bold"),
+                text_color=palette["text"],
+                anchor="w",
+            )
+            self.header.pack(fill="x", padx=SPACING["inner"], pady=(SPACING["inner"], 6), before=self.content)
+        else:
+            self.header.configure(text=title)
+
+    def animate_in(self, step=0):
+        if not self.winfo_exists():
+            return
+        palette = colors()
+        sequence = [palette["shadow"], palette["border_soft"], palette["border"]]
+        if step < len(sequence):
+            self.surface.configure(border_color=sequence[step])
+            self.after(35, lambda: self.animate_in(step + 1))
+
 
 class GlassButton(ctk.CTkButton):
-    def __init__(self, master, **kwargs):
+    def __init__(self, master, variant="primary", **kwargs):
+        palette = colors()
+        styles = {
+            "primary": (palette["accent"], palette["accent_hover"], "#FFFFFF"),
+            "secondary": (palette["surface_alt"], palette["surface_hover"], palette["text"]),
+            "danger": (palette["danger"], "#FF6961", "#FFFFFF"),
+            "success": (palette["success"], "#46E174", "#07110A"),
+            "ghost": ("transparent", palette["surface_hover"], palette["text"]),
+        }
+        fg_color, hover_color, text_color = styles.get(variant, styles["primary"])
+        kwargs.setdefault("fg_color", fg_color)
+        kwargs.setdefault("hover_color", hover_color)
+        kwargs.setdefault("text_color", text_color)
+        kwargs.setdefault("corner_radius", 12)
+        kwargs.setdefault("height", 38)
+        kwargs.setdefault("font", ("SF Pro Text", 13, "bold"))
+        kwargs.setdefault("border_width", 1 if variant in ("secondary", "ghost") else 0)
+        kwargs.setdefault("border_color", palette["border_soft"])
         super().__init__(master, **kwargs)
-        
-        # Configure glassmorphism button
-        self.configure(
-            corner_radius=12,
-            font=("SF Pro Display", 12, "semibold"),
-            text_color=("white", "black"),
-            anchor="center"
-        )
+        self._base_width = int(kwargs.get("width", self.cget("width") or 100))
+        self._base_height = int(kwargs.get("height", self.cget("height") or 38))
+        self._animating = False
+        self.bind("<Enter>", lambda _event: self._animate_scale(1.05))
+        self.bind("<Leave>", lambda _event: self._animate_scale(1.0))
+
+    def _animate_scale(self, target_scale, step=0):
+        if not self.winfo_exists():
+            return
+        steps = 4
+        current_width = int(self.cget("width"))
+        current_height = int(self.cget("height"))
+        target_width = _scaled(self._base_width, target_scale)
+        target_height = _scaled(self._base_height, target_scale)
+        if step >= steps:
+            self.configure(width=target_width, height=target_height)
+            return
+        next_width = current_width + int((target_width - current_width) / max(1, steps - step))
+        next_height = current_height + int((target_height - current_height) / max(1, steps - step))
+        self.configure(width=max(1, next_width), height=max(1, next_height))
+        self.after(18, lambda: self._animate_scale(target_scale, step + 1))
+
 
 class GlassEntry(ctk.CTkEntry):
     def __init__(self, master, **kwargs):
+        palette = colors()
+        kwargs.setdefault("fg_color", palette["input"])
+        kwargs.setdefault("border_color", palette["border"])
+        kwargs.setdefault("text_color", palette["text"])
+        kwargs.setdefault("placeholder_text_color", palette["text_dim"])
+        kwargs.setdefault("corner_radius", 12)
+        kwargs.setdefault("height", 40)
+        kwargs.setdefault("font", ("SF Pro Text", 13))
         super().__init__(master, **kwargs)
-        
-        # Configure glassmorphism entry
-        self.configure(
-            corner_radius=12,
-            font=("SF Pro Text", 12),
-            text_color=("white", "black"),
-            placeholder_text_color=("gray60", "gray40")
-        )
 
-class GlassFrame(ctk.CTkFrame):
-    def __init__(self, master, **kwargs):
-        super().__init__(master, **kwargs)
-        
-        # Configure glass effect
-        self.configure(
-            fg_color="rgba(255, 255, 255, 0.05)",
-            corner_radius=15,
-            border_width=1,
-            border_color="rgba(255, 255, 255, 0.1)"
-        )
 
 class GlassLabel(ctk.CTkLabel):
-    def __init__(self, master, **kwargs):
+    def __init__(self, master, muted=False, **kwargs):
+        palette = colors()
+        kwargs.setdefault("text_color", palette["text_muted"] if muted else palette["text"])
+        kwargs.setdefault("font", ("SF Pro Text", 13))
         super().__init__(master, **kwargs)
-        
-        # Configure glass label
-        font = kwargs.pop("font", ("SF Pro Text", 12))
-        text_color = kwargs.pop("text_color", ("white", "black"))
-        
-        self.configure(
-            font=font,
-            text_color=text_color
-        )
+
 
 class GlassImage(ctk.CTkLabel):
-    def __init__(self, master, image_path=None, size=(100, 100), **kwargs):
+    def __init__(self, master, image_path=None, size=(96, 96), **kwargs):
+        palette = colors()
+        kwargs.setdefault("text", "")
+        kwargs.setdefault("fg_color", palette["surface_alt"])
+        kwargs.setdefault("corner_radius", 12)
         super().__init__(master, **kwargs)
-        
-        self.image_size = size
-        self.pil_image = None
-        self.photo_image = None
-        
-        if image_path and os.path.exists(image_path):
-            self.load_image(image_path)
-    
-    def load_image(self, image_path):
-        try:
-            # Load and resize image
-            self.pil_image = Image.open(image_path)
-            self.pil_image = self.pil_image.resize(self.image_size, Image.Resampling.LANCZOS)
-            
-            # Convert to PhotoImage
-            self.photo_image = ImageTk.PhotoImage(self.pil_image)
-            
-            # Configure label
-            self.configure(image=self.photo_image)
-            
-        except Exception as e:
-            print(f"Error loading image: {e}")
-    
-    def set_image(self, image_path):
-        self.load_image(image_path)
 
-class CameraView(ctk.CTkLabel):
+        self.image_size = size
+        self._image_ref = None
+        self.current_image = None
+        if image_path and os.path.exists(image_path):
+            self.set_image(image_path)
+
+    def set_image(self, image_path):
+        image = Image.open(image_path).convert("RGB")
+        image.thumbnail(self.image_size, Image.Resampling.LANCZOS)
+        self.current_image = ctk.CTkImage(light_image=image, dark_image=image, size=image.size)
+        self._image_ref = self.current_image
+        self.configure(image=self.current_image, text="")
+
+
+class CameraView(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
+        palette = colors()
+        kwargs.setdefault("fg_color", "#05070B")
+        kwargs.setdefault("corner_radius", 18)
+        kwargs.setdefault("border_width", 1)
+        kwargs.setdefault("border_color", palette["border"])
         super().__init__(master, **kwargs)
-        
-        self.configure(
-            fg_color="rgba(0, 0, 0, 0.3)",
-            corner_radius=15,
-            border_width=2,
-            border_color="rgba(255, 255, 255, 0.2)",
-            text="Camera Feed",
-            font=("SF Pro Text", 14)
-        )
-        
-        self.camera_frame = ctk.CTkFrame(
+
+        self._image_ref = None
+        self.current_image = None
+        self._image_history = []
+        self.preview = tk.Label(
             self,
-            fg_color="transparent",
-            corner_radius=12,
-            border_width=0
+            text="Camera is Off\nClick Start Camera to begin live recognition",
+            foreground=palette["text_muted"],
+            font=("SF Pro Display", 18, "bold"),
+            justify="center",
+            background="#05070B",
+            borderwidth=0,
+            highlightthickness=0,
         )
-        self.camera_frame.pack(fill="both", expand=True, padx=10, pady=10)
-    
+        self.preview.pack(fill="both", expand=True, padx=SPACING["inner"], pady=SPACING["inner"])
+        self._has_frame = False
+
+    def set_active(self, active):
+        palette = colors()
+        self.configure(border_color=palette["glow"] if active else palette["border"])
+
+    def show_placeholder(self, message=None):
+        if not self.winfo_exists() or not self.preview.winfo_exists():
+            return
+        palette = colors()
+        self.preview.configure(
+            image="",
+            text=message or "Camera is Off\nClick Start Camera to begin live recognition",
+            foreground=palette["text_muted"],
+            background="#05070B",
+        )
+        self._has_frame = False
+
     def update_frame(self, frame):
+        if not self.winfo_exists() or not self.preview.winfo_exists():
+            return
         try:
-            # Convert OpenCV frame to PhotoImage
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frame_resized = cv2.resize(frame_rgb, (640, 480))
-            
-            # Convert to PIL Image
-            pil_image = Image.fromarray(frame_resized)
-            photo_image = ImageTk.PhotoImage(pil_image)
-            
-            # Update label
-            self.camera_frame.configure(image=photo_image)
-            self.camera_frame.image = photo_image  # Keep reference
-            
-        except Exception as e:
-            print(f"Error updating camera frame: {e}")
+            container_width = max(self.winfo_width() - 32, 320)
+            container_height = max(self.winfo_height() - 32, 240)
+            image = Image.fromarray(frame_rgb)
+            image.thumbnail((container_width, container_height), Image.Resampling.LANCZOS)
+            if self.current_image is not None:
+                self._image_history.append(self.current_image)
+                self._image_history = self._image_history[-8:]
+            self.current_image = ImageTk.PhotoImage(image=image)
+            self._image_ref = self.current_image
+            self.preview.configure(image=self.current_image, text="")
+            self._has_frame = True
+        except Exception as exc:
+            self.show_placeholder(f"Camera preview unavailable\n{exc}")
+
 
 class StatusBadge(ctk.CTkLabel):
-    def __init__(self, master, status="active", **kwargs):
+    def __init__(self, master, status="offline", **kwargs):
+        kwargs.setdefault("corner_radius", 14)
+        kwargs.setdefault("width", 88)
+        kwargs.setdefault("height", 28)
         super().__init__(master, **kwargs)
-        
-        self.status = status
-        self.update_style()
-    
-    def set_status(self, status):
-        self.status = status
-        self.update_style()
-    
-    def update_style(self):
-        if self.status == "active":
-            self.configure(
-                text="● Active",
-                text_color=("#30D158", "#30D158"),
-                font=("SF Pro Text", 10, "bold")
-            )
-        elif self.status == "inactive":
-            self.configure(
-                text="● Inactive",
-                text_color=("#8E8E93", "#8E8E93"),
-                font=("SF Pro Text", 10, "bold")
-            )
-        elif self.status == "warning":
-            self.configure(
-                text="● Warning",
-                text_color=("#FF9F0A", "#FF9F0A"),
-                font=("SF Pro Text", 10, "bold")
-            )
-        elif self.status == "error":
-            self.configure(
-                text="● Error",
-                text_color=("#FF453A", "#FF453A"),
-                font=("SF Pro Text", 10, "bold")
-            )
+        self.set_status(status)
 
-class ProgressRing(ctk.CTkCanvas):
-    def __init__(self, master, size=100, **kwargs):
+    def set_status(self, status):
+        palette = colors()
+        styles = {
+            "online": ("Live", palette["success"], palette["success_soft"]),
+            "checking": ("Checking", palette["warning"], palette["warning_soft"]),
+            "offline": ("Offline", palette["text_muted"], palette["surface_alt"]),
+            "error": ("Error", palette["danger"], palette["danger_soft"]),
+        }
+        label, text_color, fg_color = styles.get(status, styles["offline"])
+        self.configure(
+            text=label,
+            text_color=text_color,
+            fg_color=fg_color,
+            font=("SF Pro Text", 12, "bold"),
+        )
+
+
+class MetricCard(ctk.CTkFrame):
+    def __init__(self, master, title, value="0", accent="accent", **kwargs):
+        palette = colors()
+        kwargs.setdefault("fg_color", palette["glass"])
+        kwargs.setdefault("corner_radius", 18)
+        kwargs.setdefault("border_width", 1)
+        kwargs.setdefault("border_color", palette["border"])
         super().__init__(master, **kwargs)
-        
-        self.size = size
-        self.configure(width=size, height=size, highlightthickness=0)
-        
-        # Create ring
-        self.ring = self.create_oval(
-            5, 5, size-5, size-5,
-            outline="rgba(255, 255, 255, 0.2)",
-            width=3,
-            style="arc"
+
+        self.accent_key = accent
+        self.value_label = ctk.CTkLabel(
+            self,
+            text=str(value),
+            font=("SF Pro Display", 30, "bold"),
+            text_color=palette.get(accent, palette["accent"]),
+            anchor="w",
         )
-        
-        # Create text
-        self.text = self.create_text(
-            size//2, size//2,
-            text="0%",
-            font=("SF Pro Display", 12, "bold"),
-            fill="white"
+        self.value_label.pack(fill="x", padx=SPACING["inner"], pady=(SPACING["inner"], 0))
+
+        self.title_label = ctk.CTkLabel(
+            self,
+            text=title,
+            font=("SF Pro Text", 13, "bold"),
+            text_color=palette["text_muted"],
+            anchor="w",
         )
-    
-    def set_progress(self, percentage):
-        # Calculate angle for arc (0% = 0°, 100% = 360°)
-        angle = (percentage / 100) * 360
-        
-        # Update ring
-        self.itemconfig(self.ring, 
-                       extent=angle,
-                       outline="rgba(0, 132, 255, 0.8)" if percentage > 0 else "rgba(255, 255, 255, 0.2)")
-        
-        # Update text
-        self.itemconfig(self.text, text=f"{percentage:.0f}%")
+        self.title_label.pack(fill="x", padx=SPACING["inner"], pady=(2, SPACING["inner"]))
+
+    def set_value(self, value):
+        self.value_label.configure(text=str(value))
+
 
 class GlassListbox(ctk.CTkScrollableFrame):
     def __init__(self, master, **kwargs):
+        palette = colors()
+        kwargs.setdefault("fg_color", palette["glass_subtle"])
+        kwargs.setdefault("corner_radius", 16)
+        kwargs.setdefault("border_width", 1)
+        kwargs.setdefault("border_color", palette["border_soft"])
+        kwargs.setdefault("scrollbar_button_color", palette["surface_hover"])
+        kwargs.setdefault("scrollbar_fg_color", palette["surface"])
         super().__init__(master, **kwargs)
-        
-        # Configure glass effect
-        self.configure(
-            fg_color="rgba(255, 255, 255, 0.05)",
-            corner_radius=15,
-            border_width=1,
-            border_color="rgba(255, 255, 255, 0.1)"
-        )
-        
         self.items = []
-        self.selected_index = None
-        
-        # Configure scrollbar
-        self.configure(scrollbar_button_color="rgba(255, 255, 255, 0.3)")
-        self.configure(scrollbar_fg_color="rgba(255, 255, 255, 0.5)")
-    
-    def add_item(self, text, callback=None):
-        item_frame = ctk.CTkFrame(
-            self,
-            fg_color="rgba(255, 255, 255, 0.1)",
-            corner_radius=8,
-            border_width=0
-        )
-        item_frame.pack(fill="x", padx=5, pady=2)
-        
-        item_label = ctk.CTkLabel(
-            item_frame,
-            text=text,
-            font=("SF Pro Text", 12),
-            text_color=("white", "black"),
-            anchor="w"
-        )
-        item_label.pack(side="left", padx=10, pady=8)
-        
-        # Bind click event
-        if callback:
-            item_frame.bind("<Button-1>", lambda e: callback(text))
-            item_label.bind("<Button-1>", lambda e: callback(text))
-        
-        self.items.append({
-            'frame': item_frame,
-            'label': item_label,
-            'text': text,
-            'callback': callback
-        })
-    
+
     def clear_items(self):
         for item in self.items:
-            item['frame'].destroy()
+            item.destroy()
         self.items = []
-        self.selected_index = None
-    
-    def select_item(self, index):
-        if 0 <= index < len(self.items):
-            # Deselect previous
-            if self.selected_index is not None:
-                self.items[self.selected_index]['frame'].configure(fg_color="rgba(255, 255, 255, 0.1)")
-            
-            # Select new
-            self.selected_index = index
-            self.items[index]['frame'].configure(fg_color="rgba(0, 132, 255, 0.2)")
 
-def inject_glass_effect(widget, **style):
-    """Apply glassmorphism effect to any widget"""
-    widget.configure(
-        corner_radius=style.get('corner_radius', 12),
-        border_width=style.get('border_width', 1),
-        border_color=style.get('border_color', "rgba(255, 255, 255, 0.2)"),
-        fg_color=style.get('fg_color', "rgba(255, 255, 255, 0.1)")
+
+def row_frame(master):
+    palette = colors()
+    return ctk.CTkFrame(
+        master,
+        fg_color=palette["surface_alt"],
+        corner_radius=14,
+        border_width=1,
+        border_color=palette["border_soft"],
     )
-    return widget
